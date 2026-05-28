@@ -1,0 +1,5 @@
+parameters:
+  talos_backup:
+    =_metadata:
+      multi_tenant: true
+    namespace: syn-talos-backup

@@ -2,19 +2,22 @@
 local com = import 'lib/commodore.libjsonnet';
 local kap = import 'lib/kapitan.libjsonnet';
 local kube = import 'lib/kube.libjsonnet';
-local lib = import 'lib/talos-backup.libsonnet';
+local lib = import 'talos-backup.libsonnet';
 local inv = kap.inventory();
 local params = inv.parameters.talos_backup;
 
-local componentName = 'talos-backup';
+local componentName = inv.parameters._instance;
 
-assert std.length(params.age_recipient_public_keys) > 0 :
-       'talos_backup: age_recipient_public_keys must contain at least one public key';
-assert params.s3.bucket != '' : 'talos_backup: s3.bucket must be set';
-assert !params.s3.credentials.create
-       || (params.s3.credentials.access_key_id != ''
-           && params.s3.credentials.secret_access_key != '') :
-       'talos_backup: s3.credentials.create=true requires access_key_id and secret_access_key';
+assert
+  std.length(params.age_recipient_public_keys) > 0
+  : 'talos_backup: age_recipient_public_keys must contain at least one public key';
+assert
+  params.s3.bucket != ''
+  : 'talos_backup: s3.bucket must be set';
+assert
+  !params.s3.credentials.create
+  || (params.s3.credentials.access_key_id != '' && params.s3.credentials.secret_access_key != '')
+  : 'talos_backup: s3.credentials.create=true requires access_key_id and secret_access_key';
 
 local commonLabels = {
   'app.kubernetes.io/component': componentName,

@@ -127,10 +127,18 @@ type:: object
 
 S3 access credentials.
 
-`create`:: When `true`, the component renders a `Secret` from `access_key_id` and `secret_access_key`. When `false`, the `CronJob` references an existing `Secret` by `name`. Default: `false`.
-`name`:: Secret name. Default: `talos-backup-s3`.
-`access_key_id`:: Only used when `create: true`.
-`secret_access_key`:: Only used when `create: true`. Should be sourced from a secret backend (Vault, SOPS).
+`create`::
+When `true`, the component renders a `Secret` from `access_key_id` and `secret_access_key`.
+When `false`, the `CronJob` references an existing `Secret` by `name`.
+Default: `false`.
+`name`::
+Secret name.
+Default: `talos-backup-s3`.
+`access_key_id`::
+Only used when `create: true`.
+`secret_access_key`::
+Only used when `create: true`.
+Should be sourced from a secret backend (Vault, SOPS).
 
 [IMPORTANT]
 ====

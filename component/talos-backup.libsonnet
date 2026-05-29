@@ -22,8 +22,7 @@ local S3CredentialsSecret(params) = kube.Secret(params.s3.credentials.name) {
 };
 
 local image(params) =
-  local i = params.images.talos_backup;
-  '%s/%s:%s' % [ i.registry, i.repository, i.tag ];
+  '%(registry)s/%(repository)s:%(tag)s' % params.images.talos_backup;
 
 local envFromParams(params) =
   local fromSecret(k) = {

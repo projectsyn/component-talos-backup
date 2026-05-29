@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels:
+    app.kubernetes.io/component: talos-backup
+    app.kubernetes.io/managed-by: commodore
+    app.kubernetes.io/name: talos-backup
+    app.kubernetes.io/part-of: syn
+  name: talos-backup
+  namespace: syn-talos-backup
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          automountServiceAccountToken: false
+          containers:
+            - command:
+                - /talos-backup
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      key: AWS_ACCESS_KEY_ID
+                      name: talos-backup-s3
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      key: AWS_SECRET_ACCESS_KEY
+                      name: talos-backup-s3
+                - name: AWS_REGION
+                  value: us-east-1
+                - name: BUCKET
+                  value: example-talos-backups
+                - name: USE_PATH_STYLE
+                  value: 'false'
+                - name: ENABLE_COMPRESSION
+                  value: 'false'
+                - name: AGE_RECIPIENT_PUBLIC_KEY
+                  value: age1khpnnl86pzx96ttyjmldptsl5yn2v9jgmmzcjcufvk00ttkph9zs0ytgec
+                - name: AGE_X25519_PUBLIC_KEY
+                  value: age1khpnnl86pzx96ttyjmldptsl5yn2v9jgmmzcjcufvk00ttkph9zs0ytgec
+              image: ghcr.io/siderolabs/talos-backup:v0.1.0-beta.3-10-gb9fd478
+              imagePullPolicy: IfNotPresent
+              name: talos-backup
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+              volumeMounts:
+                - mountPath: /tmp
+                  name: tmp
+                - mountPath: /.talos
+                  name: talos
+                - mountPath: /var/run/secrets/talos.dev
+                  name: talos-secrets
+              workingDir: /tmp
+          restartPolicy: OnFailure
+          securityContext:
+            fsGroup: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          volumes:
+            - emptyDir: {}
+              name: tmp
+            - emptyDir: {}
+              name: talos
+            - name: talos-secrets
+              secret:
+                secretName: talos-backup-secrets
+  schedule: 0 */6 * * *
+  successfulJobsHistoryLimit: 3

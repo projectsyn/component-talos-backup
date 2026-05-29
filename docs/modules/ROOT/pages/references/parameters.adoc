@@ -5,15 +5,218 @@ The parent key for all of the following parameters is `talos_backup`.
 == `namespace`
 
 [horizontal]
-type:: string
-default:: `syn-talos-backup`
+type:: object
 
-The namespace in which to deploy this component.
+Namespace in which the component is deployed.
+
+`namespace.name`:: Namespace name. Default: `syn-talos-backup`.
+`namespace.labels`:: Additional namespace labels. Default: `{}`.
+`namespace.annotations`:: Additional namespace annotations. Default: `{}`.
+
+NOTE: The Talos machine configuration must include this namespace in
+`kubernetesTalosAPIAccess.allowedKubernetesNamespaces`.
+
+
+== `images.talos_backup`
+
+[horizontal]
+type:: object
+
+Container image for the `talos-backup` binary.
+
+`registry`:: Default: `ghcr.io`.
+`repository`:: Default: `siderolabs/talos-backup`.
+`tag`:: Default: `v0.1.0-beta.3-10-gb9fd478` (post-release main build; needed for multi-recipient age, zstd compression, and S3 path-style support).
+`pull_policy`:: Default: `IfNotPresent`.
+
+
+== `schedule`
+
+[horizontal]
+type:: string
+default:: `0 */6 * * *`
+
+Cron schedule for the backup job.
+
+
+== `successful_jobs_history_limit`
+
+[horizontal]
+type:: integer
+default:: `3`
+
+
+== `failed_jobs_history_limit`
+
+[horizontal]
+type:: integer
+default:: `1`
+
+
+== `concurrency_policy`
+
+[horizontal]
+type:: string
+default:: `Forbid`
+
+`CronJob.spec.concurrencyPolicy`. Valid values: `Allow`, `Forbid`, `Replace`.
+
+
+== `talos_service_account.name`
+
+[horizontal]
+type:: string
+default:: `talos-backup-secrets`
+
+Name of the `talos.dev/v1alpha1` `ServiceAccount` object created by the
+component and consumed by the pod to authenticate against the Talos API.
+The Talos SA controller projects a Secret of the same name into the
+namespace, which the CronJob mounts at `/var/run/secrets/talos.dev`.
+
+No Kubernetes `v1` `ServiceAccount` is created — the pod runs with
+`automountServiceAccountToken: false` since it does not call the
+Kubernetes API.
+
+
+== `s3.bucket`
+
+[horizontal]
+type:: string
+default:: `''`
+
+S3 bucket that receives the backups. Required.
+
+
+== `s3.region`
+
+[horizontal]
+type:: string
+default:: `us-east-1`
+
+
+== `s3.endpoint`
+
+[horizontal]
+type:: string
+default:: `''`
+
+Custom S3 endpoint for S3-compatible providers (MinIO, cloudscale,
+exoscale, etc.). Leave empty to use the AWS default endpoints.
+
+
+== `s3.use_path_style`
+
+[horizontal]
+type:: boolean
+default:: `false`
+
+Set to `true` for endpoints that require path-style bucket addressing.
+
+
+== `s3.prefix`
+
+[horizontal]
+type:: string
+default:: `''`
+
+Object key prefix inside the bucket. Falls back to the cluster name when
+empty.
+
+
+== `s3.credentials`
+
+[horizontal]
+type:: object
+
+S3 access credentials.
+
+`create`:: When `true`, the component renders a `Secret` from
+  `access_key_id` and `secret_access_key`. When `false`, the `CronJob`
+  references an existing `Secret` by `name`. Default: `false`.
+`name`:: Secret name. Default: `talos-backup-s3`.
+`access_key_id`:: Only used when `create: true`.
+`secret_access_key`:: Only used when `create: true`. Should be sourced
+  from a secret backend (Vault, SOPS).
+
+[IMPORTANT]
+====
+When `credentials.create` is `false`, an existing `Secret` named according
+to `credentials.name` must already exist in the deploy namespace and must
+contain the keys `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. The
+`CronJob` reads them via `secretKeyRef`.
+====
+
+
+== `cluster_name`
+
+[horizontal]
+type:: string
+default:: `''`
+
+Passed as `CLUSTER_NAME`. If empty, `talos-backup` falls back to the
+talosconfig context name.
+
+
+== `age_recipient_public_keys`
+
+[horizontal]
+type:: list of strings
+default:: `[]`
+
+age public keys used to encrypt the etcd snapshot. At least one entry is
+required. Multiple recipients are supported.
+
+
+== `enable_compression`
+
+[horizontal]
+type:: boolean
+default:: `false`
+
+Compress the etcd snapshot with zstd before encryption.
+
+
+== `extra_env`
+
+[horizontal]
+type:: object
+default:: `{}`
+
+Additional environment variables to inject into the container. Keys are
+variable names, values are stringified.
+
+
+== `resources`
+
+[horizontal]
+type:: object
+
+`CronJob` container resource requests and limits.
+
+
+== `node_selector`, `tolerations`, `affinity`
+
+Pod scheduling hints. All default to empty.
 
 
 == Example
 
 [source,yaml]
 ----
-namespace: example-namespace
+parameters:
+  talos_backup:
+    schedule: '0 */4 * * *'
+    s3:
+      bucket: my-talos-backups
+      region: eu-west-1
+      endpoint: https://objects.example.com
+      use_path_style: true
+      credentials:
+        create: true
+        access_key_id: ?{vaultkv:.../s3-access-key}
+        secret_access_key: ?{vaultkv:.../s3-secret-key}
+    age_recipient_public_keys:
+      - age1khpnnl86pzx96ttyjmldptsl5yn2v9jgmmzcjcufvk00ttkph9zs0ytgec
+    cluster_name: ${cluster:name}
+    enable_compression: true
 ----

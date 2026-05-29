@@ -1,3 +1,7 @@
-# Overwrite parameters here
-
-# parameters: {...}
+parameters:
+  talos_backup:
+    s3:
+      bucket: example-talos-backups
+      region: us-east-1
+    age_recipient_public_keys:
+      - age1khpnnl86pzx96ttyjmldptsl5yn2v9jgmmzcjcufvk00ttkph9zs0ytgec

@@ -1,0 +1,36 @@
+parameters:
+  talos_backup:
+    schedule: '*/30 * * * *'
+    concurrency_policy: Replace
+    successful_jobs_history_limit: 5
+    failed_jobs_history_limit: 3
+    s3:
+      bucket: example-talos-backups
+      region: lpg
+      endpoint: https://objects.example.com
+      use_path_style: true
+      prefix: prod-cluster
+      credentials:
+        create: true
+        access_key_id: examplekey
+        secret_access_key: examplesecretvalue
+    cluster_name: prod-cluster
+    age_recipient_public_keys:
+      - age1khpnnl86pzx96ttyjmldptsl5yn2v9jgmmzcjcufvk00ttkph9zs0ytgec
+      - age1majtfe4q0u030xcjg0ent45stsfev28fjwy0saxqw4c3x85gge5s5gtkwx
+    enable_compression: true
+    extra_env:
+      AWS_EC2_METADATA_DISABLED: 'true'
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: '1'
+        memory: 512Mi
+    node_selector:
+      kubernetes.io/os: linux
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule

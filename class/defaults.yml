@@ -2,4 +2,66 @@ parameters:
   talos_backup:
     =_metadata:
       multi_tenant: true
-    namespace: syn-talos-backup
+
+    namespace:
+      name: syn-talos-backup
+      labels: {}
+      annotations: {}
+
+    images:
+      talos_backup:
+        registry: ghcr.io
+        repository: siderolabs/talos-backup
+        # Pinned to a git-describe tag of main HEAD until upstream cuts a
+        # stable release. Tagged v0.1.0-beta.* releases lack zstd,
+        # path-style, and multi-recipient age. Bump manually after watching
+        # https://github.com/siderolabs/talos-backup/releases — Renovate is
+        # disabled for this image (see renovate.json).
+        tag: v0.1.0-beta.3-10-gb9fd478
+        pull_policy: IfNotPresent
+
+    schedule: "0 */6 * * *"
+    successful_jobs_history_limit: 3
+    failed_jobs_history_limit: 1
+    concurrency_policy: Forbid
+
+    # Talos API ServiceAccount (talos.dev/v1alpha1) granting os:etcd:backup.
+    # Requires kubernetesTalosAPIAccess machineconfig allow-listing the
+    # deploy namespace and the os:etcd:backup role.
+    talos_service_account:
+      name: talos-backup-secrets
+
+    s3:
+      bucket: ""
+      region: us-east-1
+      endpoint: ""
+      use_path_style: false
+      prefix: ""
+      credentials:
+        create: false
+        name: talos-backup-s3
+        access_key_id: ""
+        secret_access_key: ""
+
+    # Optional. Falls back to the talosconfig context name when empty.
+    cluster_name: ""
+
+    # Required. List of age public keys to encrypt the snapshot for.
+    age_recipient_public_keys: []
+
+    enable_compression: false
+
+    # Extra env vars appended to the container.
+    extra_env: {}
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+    node_selector: {}
+    tolerations: []
+    affinity: {}

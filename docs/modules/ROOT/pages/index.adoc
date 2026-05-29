@@ -1,5 +1,36 @@
-= Talos Linux aware etcd snapshotter.
+= talos-backup
 
-talos-backup is a Commodore component to manage Talos Linux aware etcd snapshotter..
+talos-backup is a Commodore component that deploys
+https://github.com/siderolabs/talos-backup[siderolabs/talos-backup]
+as a Kubernetes `CronJob` on a Talos Linux cluster.
+It periodically snapshots etcd through the Talos API, encrypts the snapshot
+with https://age-encryption.org[age], and pushes it to an S3-compatible
+object store.
 
-See the xref:references/parameters.adoc[parameters] reference for further details.
+== Prerequisites
+
+The Talos machine configuration must allow the Kubernetes-side Talos API
+access for the `os:etcd:backup` role in the namespace where the component
+is deployed:
+
+[source,yaml]
+----
+machine:
+  features:
+    kubernetesTalosAPIAccess:
+      enabled: true
+      allowedRoles:
+        - os:etcd:backup
+      allowedKubernetesNamespaces:
+        - syn-talos-backup
+----
+
+You also need:
+
+* An age keypair (`age-keygen`). The public key(s) are passed to the
+  component; the private key is kept by the operator to decrypt backups.
+* An S3 bucket and credentials. A lifecycle policy on the bucket is the
+  recommended way to enforce retention.
+
+See the xref:references/parameters.adoc[parameters] reference for the full
+list of configurable options.
